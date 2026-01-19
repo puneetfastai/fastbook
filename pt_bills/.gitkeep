@@ -1,0 +1,2 @@
+# This file ensures the pt_bills directory is tracked by git
+# Add your PDF bills here (they will be ignored by .gitignore)

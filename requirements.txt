@@ -7,3 +7,7 @@ pandas
 scikit_learn
 azure-cognitiveservices-search-imagesearch
 sentencepiece
+pdfplumber
+selenium
+webdriver-manager
+python-dotenv

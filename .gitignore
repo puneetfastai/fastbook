@@ -8,3 +8,8 @@ __pycache__/
 .last_checked
 .gitconfig
 .ipynb_checkpoints/
+
+# Claims Agent - Sensitive Data
+.env
+pt_bills/*.pdf
+claims_output/*.json
