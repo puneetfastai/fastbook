@@ -29,35 +29,51 @@ def extract_text_from_pdf(pdf_path):
         return None
 
 def extract_claim_info(text, filename):
-    """Extract claim information from bill text"""
+    """Extract claim information from bill text - customized for P3 Athletic superbills"""
     info = {"filename": filename}
 
-    # Patient name
-    match = re.search(r'Patient[:\\s]+([A-Z][a-zA-Z\\s]+?)(?:\\n|\\s{2,})', text, re.IGNORECASE)
+    # Patient name - appears after "Patient Information" header
+    match = re.search(r'Name.*?\n([A-Z][a-z]+\s+[A-Z][a-z]+)', text, re.IGNORECASE)
+    if not match:
+        match = re.search(r'Patient.*?\n.*?([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\d{4}-\d{2}-\d{2}', text)
     info["patient_name"] = match.group(1).strip() if match else "Not found"
 
-    # Date of birth
-    match = re.search(r'(?:DOB|Date of Birth)[:\\s]+(\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4})', text, re.IGNORECASE)
+    # Date of birth - in format YYYY-MM-DD
+    match = re.search(r'(\d{4}-\d{2}-\d{2})', text)
     info["patient_dob"] = match.group(1) if match else "Not found"
 
-    # Member ID
-    match = re.search(r'(?:Member ID|Policy #|Insurance ID)[:\\s]+([A-Z0-9]+)', text, re.IGNORECASE)
-    info["member_id"] = match.group(1) if match else "Not found"
+    # Invoice number
+    match = re.search(r'Invoice\s*#\s*(\d+)', text, re.IGNORECASE)
+    info["invoice_number"] = match.group(1) if match else "Not found"
 
-    # Provider
-    match = re.search(r'(?:Provider|Clinic|Practice)[:\\s]+([A-Z][a-zA-Z\\s&,\\.]+?)(?:\\n|\\s{2,})', text, re.IGNORECASE)
+    # Provider name - after "Provider" in Session Information
+    match = re.search(r'(?:Provider|Invoice #\d+)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z]+,?\s*[A-Z]+)?)', text)
     info["provider_name"] = match.group(1).strip() if match else "Not found"
 
-    # Service date
-    match = re.search(r'(?:Service Date|Date of Service|DOS)[:\\s]+(\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4})', text, re.IGNORECASE)
+    # Clinic/Practice name - first line
+    match = re.search(r'^([A-Z][A-Za-z0-9\s&]+(?:Therapy|Clinic|Practice|Health|Medical))', text, re.MULTILINE)
+    info["clinic_name"] = match.group(1).strip() if match else "Not found"
+
+    # EIN
+    match = re.search(r'EIN\s*#?\s*(\d{2}-\d{7})', text, re.IGNORECASE)
+    info["ein"] = match.group(1) if match else "Not found"
+
+    # NPI
+    match = re.search(r'NPI\s*#?\s*(\d+)', text, re.IGNORECASE)
+    info["npi"] = match.group(1) if match else "Not found"
+
+    # Service date - "Date of Visit" field
+    match = re.search(r'Date of Visit.*?\n([A-Z][a-z]+\s+\d{1,2},\s+\d{4})', text, re.IGNORECASE)
+    if not match:
+        match = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})', text)
     info["service_date"] = match.group(1) if match else "Not found"
 
-    # Total amount
-    match = re.search(r'(?:Total|Amount Due|Balance)[:\\s]+\\$?([0-9,]+\\.\\d{2})', text, re.IGNORECASE)
+    # Total amount - look for various patterns
+    match = re.search(r'(?:Total|Amount Due|Balance)[\s:]+\$?([0-9,]+\.\d{2})', text, re.IGNORECASE)
     info["total_amount"] = match.group(1) if match else "Not found"
 
-    # Procedure codes (CPT)
-    codes = re.findall(r'\\b(\\d{5})\\b', text)
+    # Procedure codes (CPT) - PT codes typically start with 97
+    codes = re.findall(r'\b(\d{5})\b', text)
     pt_codes = [code for code in codes if code.startswith('97')]
     info["procedure_codes"] = pt_codes if pt_codes else "Not found"
 
